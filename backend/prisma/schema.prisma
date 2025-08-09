@@ -12,3 +12,52 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model User {
+  id             Int       @id @default(autoincrement())
+  wallet_address String    @unique
+  role           Role
+  created_at     DateTime  @default(now())
+  projectsClient Project[] @relation("ClientProjects")
+  projectsFreelancer Project[] @relation("FreelancerProjects")
+}
+
+model Project {
+  id            Int         @id @default(autoincrement())
+  onchain_pid   BigInt
+  client        User        @relation("ClientProjects", fields: [clientId], references: [id])
+  clientId      Int
+  freelancer    User        @relation("FreelancerProjects", fields: [freelancerId], references: [id])
+  freelancerId  Int
+  disputed      Boolean     @default(false)
+  created_at    DateTime    @default(now())
+  milestones    Milestone[]
+}
+
+model Milestone {
+  id              Int      @id @default(autoincrement())
+  project         Project  @relation(fields: [projectId], references: [id])
+  projectId       Int
+  mid             Int
+  amount_wei      String
+  funded          Boolean  @default(false)
+  released        Boolean  @default(false)
+  deliverable_cid String?
+  created_at      DateTime @default(now())
+}
+
+model Event {
+  id         Int      @id @default(autoincrement())
+  tx_hash    String
+  type       String
+  payload    Json
+  created_at DateTime @default(now())
+}
+
+enum Role {
+  client
+  freelancer
+  admin
+}
+
+
