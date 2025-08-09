@@ -2,12 +2,14 @@ const express = require("express");
 const prisma = require("../config/db");
 const router = express.Router();
 
-// Create a new project in DB (on-chain creation happens via frontend MetaMask)
 router.post("/", async (req, res) => {
   try {
     const { onchain_pid, client_wallet, freelancer_wallet, amounts_wei } = req.body;
 
-    // Ensure users exist
+    if (!Array.isArray(amounts_wei)) {
+      return res.status(400).json({ error: "amounts_wei must be an array" });
+    }
+
     let client = await prisma.user.upsert({
       where: { wallet_address: client_wallet },
       update: {},
@@ -35,11 +37,17 @@ router.post("/", async (req, res) => {
       include: { milestones: true }
     });
 
-    res.json(project);
+    // Convert BigInts to strings for safe JSON
+    const safeProject = JSON.parse(JSON.stringify(project, (_, value) =>
+      typeof value === "bigint" ? value.toString() : value
+    ));
+
+    res.json(safeProject);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Could not create project" });
   }
 });
+
 
 module.exports = router;

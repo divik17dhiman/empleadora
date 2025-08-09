@@ -8,6 +8,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+
+app.get('/', (req, res) => {
+    res.send('Backend is running 🚀');
+});
+
 app.use("/projects", projectsRoute);
 app.use("/milestones", milestonesRoute);
 app.use("/admin", adminRoute);

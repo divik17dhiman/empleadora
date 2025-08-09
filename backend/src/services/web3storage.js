@@ -1,14 +1,22 @@
-const { Web3Storage, File } = require("web3.storage");
 const fs = require("fs");
-require("dotenv").config();
+const FormData = require("form-data");
+const fetch = require("node-fetch"); // if not installed: npm install node-fetch
 
-const client = new Web3Storage({ token: process.env.WEB3STORAGE_TOKEN });
+const IPFS_API = "http://127.0.0.1:5001/api/v0/add"; // local IPFS API
 
 async function uploadFile(filePath) {
-  const file = await fs.promises.readFile(filePath);
-  const files = [new File([file], filePath)];
-  const cid = await client.put(files);
-  return cid;
+  const formData = new FormData();
+  formData.append("file", fs.createReadStream(filePath));
+
+  const response = await fetch(IPFS_API, {
+    method: "POST",
+    body: formData,
+    // 🔹 Needed for Node.js >= 18 when sending FormData
+    duplex: "half"
+  });
+
+  const data = await response.json();
+  return data.Hash; // CID
 }
 
 module.exports = { uploadFile };
