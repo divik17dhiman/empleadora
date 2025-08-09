@@ -6,7 +6,7 @@ const provider = new ethers.JsonRpcProvider("https://api.avax-test.network/ext/b
 // Admin signer for refund (server only)
 const adminWallet = new ethers.Wallet(process.env.PRIVATE_KEY_ADMIN, provider);
 
-const escrowAbi = require("../contracts/Escrow.json").abi;
+const escrowAbi = require("../../artifacts/contracts/Escrow.sol/Escrow.json").abi;
 const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, escrowAbi, provider);
 
 module.exports = { provider, adminWallet, contract };
