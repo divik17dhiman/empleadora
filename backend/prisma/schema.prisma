@@ -15,23 +15,44 @@ datasource db {
 
 model User {
   id             Int       @id @default(autoincrement())
+  email          String    @unique
+  password       String
   wallet_address String    @unique
   role           Role
   created_at     DateTime  @default(now())
   projectsClient Project[] @relation("ClientProjects")
   projectsFreelancer Project[] @relation("FreelancerProjects")
+  applications   ProjectApplication[] @relation("FreelancerApplications")
 }
 
 model Project {
   id            Int         @id @default(autoincrement())
   onchain_pid   BigInt
+  title         String
+  description   String
+  budget        String
+  skills        String[]
+  status        ProjectStatus @default(OPEN)
   client        User        @relation("ClientProjects", fields: [clientId], references: [id])
   clientId      Int
-  freelancer    User        @relation("FreelancerProjects", fields: [freelancerId], references: [id])
-  freelancerId  Int
+  freelancer    User?       @relation("FreelancerProjects", fields: [freelancerId], references: [id])
+  freelancerId  Int?
   disputed      Boolean     @default(false)
   created_at    DateTime    @default(now())
   milestones    Milestone[]
+  applications  ProjectApplication[]
+}
+
+model ProjectApplication {
+  id          Int      @id @default(autoincrement())
+  project     Project  @relation(fields: [projectId], references: [id])
+  projectId   Int
+  freelancer  User     @relation("FreelancerApplications", fields: [freelancerId], references: [id])
+  freelancerId Int
+  proposal    String
+  bid_amount  String
+  status      ApplicationStatus @default(PENDING)
+  created_at  DateTime @default(now())
 }
 
 model Milestone {
@@ -58,6 +79,20 @@ enum Role {
   client
   freelancer
   admin
+}
+
+enum ProjectStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ApplicationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
 }
 
 

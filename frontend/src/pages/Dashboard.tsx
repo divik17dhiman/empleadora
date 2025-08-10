@@ -1,469 +1,356 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AIJobMatcher } from '@/components/shared/AIJobMatcher';
-import { EscrowPaymentCard } from '@/components/shared/EscrowPaymentCard';
-import { ProjectMessaging } from '@/components/shared/ProjectMessaging';
-import { PortfolioCard } from '@/components/shared/PortfolioCard';
+import { useAuth } from '@/context/AuthContext';
 import { 
-  TrendingUp, 
-  DollarSign, 
+  Briefcase, 
   Users, 
+  TrendingUp, 
+  Award, 
   Clock, 
-  Star, 
-  MessageSquare, 
-  Shield, 
+  CheckCircle, 
+  AlertCircle, 
+  Plus,
+  DollarSign,
   Calendar,
-  Award,
-  Target,
-  Zap,
-  Bell,
-  CheckCircle
+  Star,
+  Settings,
+  FileText,
+  MessageSquare
 } from 'lucide-react';
 
-interface DashboardProps {
-  userType: 'client' | 'freelancer';
-}
-
-const Dashboard = ({ userType = 'freelancer' }: DashboardProps) => {
+const Dashboard = () => {
+  const { user, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
 
-  // Sample data
+  // Mock data - in real app, this would come from API
   const stats = {
-    freelancer: {
-      activeProjects: 3,
-      totalEarnings: 245000,
-      completedProjects: 24,
-      rating: 4.9,
-      responseTime: '2 hours',
-      availableJobs: 156
-    },
-    client: {
-      activeProjects: 5,
-      totalSpent: 180000,
-      hiredFreelancers: 12,
-      avgProjectTime: '3 weeks',
-      savedProfiles: 8,
-      newProposals: 23
-    }
+    totalProjects: 12,
+    activeProjects: 5,
+    completedProjects: 7,
+    totalEarnings: 45000,
+    pendingPayments: 8500,
+    averageRating: 4.8,
+    responseTime: '2.3 hours'
   };
 
-  const currentUserStats = stats[userType];
-
-  const recentActivity = [
+  const recentProjects = [
     {
-      id: '1',
-      type: 'payment',
-      title: 'Payment received from TechStart Solutions',
-      amount: 45000,
-      timestamp: '2 hours ago',
-      status: 'completed'
-    },
-    {
-      id: '2',
-      type: 'message',
-      title: 'New message from Rajesh Kumar',
-      content: 'Great work on the wireframes!',
-      timestamp: '4 hours ago',
-      status: 'unread'
-    },
-    {
-      id: '3',
-      type: 'proposal',
-      title: 'Proposal accepted for E-commerce Project',
-      timestamp: '1 day ago',
-      status: 'accepted'
-    },
-    {
-      id: '4',
-      type: 'review',
-      title: 'New 5-star review received',
-      content: '"Excellent work and communication!"',
-      timestamp: '2 days ago',
-      status: 'positive'
-    }
-  ];
-
-  const activeProjects = [
-    {
-      id: '1',
-      title: 'E-commerce Mobile App UI/UX',
-      client: 'TechStart Solutions',
+      id: 1,
+      title: 'E-commerce Website Development',
+      status: 'active',
       progress: 75,
-      deadline: '2025-01-25',
-      budget: 85000,
-      status: 'in_progress',
-      lastActivity: '2 hours ago'
+      budget: 5000,
+      deadline: '2024-02-15',
+      client: 'TechCorp Inc.'
     },
     {
-      id: '2',
-      title: 'Brand Identity for Food Startup',
-      client: 'Spice Route Restaurants',
-      progress: 45,
-      deadline: '2025-01-30',
-      budget: 45000,
-      status: 'in_progress',
-      lastActivity: '1 day ago'
+      id: 2,
+      title: 'Mobile App UI/UX Design',
+      status: 'completed',
+      progress: 100,
+      budget: 3000,
+      deadline: '2024-01-30',
+      client: 'StartupXYZ'
     },
     {
-      id: '3',
-      title: 'Landing Page Redesign',
-      client: 'LearnIndia EdTech',
-      progress: 90,
-      deadline: '2025-01-20',
-      budget: 25000,
-      status: 'review',
-      lastActivity: '3 hours ago'
+      id: 3,
+      title: 'Content Writing for Blog',
+      status: 'pending',
+      progress: 0,
+      budget: 800,
+      deadline: '2024-02-20',
+      client: 'Digital Marketing Co.'
     }
   ];
 
-  const portfolioItems = [
+  const recentActivities = [
     {
-      id: '1',
-      title: 'FoodieApp - Food Delivery Mobile App',
-      description: 'Complete UI/UX design for a local food delivery platform',
-      image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136',
-      category: 'Mobile App',
-      tags: ['UI/UX', 'Mobile', 'Food Tech'],
-      likes: 245,
-      views: 1200,
-      client: 'FoodieApp',
-      completedDate: 'Dec 2024'
+      id: 1,
+      type: 'milestone_completed',
+      message: 'Milestone "Design Phase" completed for E-commerce Website',
+      time: '2 hours ago',
+      icon: <CheckCircle className="w-4 h-4 text-green-500" />
     },
     {
-      id: '2',
-      title: 'EcoTech Brand Identity',
-      description: 'Complete branding package for sustainable technology startup',
-      image: 'https://images.unsplash.com/photo-1549923746-c502d488b3ea',
-      category: 'Branding',
-      tags: ['Logo', 'Branding', 'Sustainability'],
-      likes: 189,
-      views: 856,
-      client: 'EcoTech Solutions',
-      completedDate: 'Nov 2024'
+      id: 2,
+      type: 'payment_received',
+      message: 'Payment received for Mobile App UI/UX Design project',
+      time: '1 day ago',
+      icon: <DollarSign className="w-4 h-4 text-green-500" />
+    },
+    {
+      id: 3,
+      type: 'new_message',
+      message: 'New message from TechCorp Inc. regarding project timeline',
+      time: '2 days ago',
+      icon: <MessageSquare className="w-4 h-4 text-blue-500" />
     }
   ];
 
-  const getActivityIcon = (type: string) => {
-    switch (type) {
-      case 'payment': return <DollarSign className="text-green-500" size={16} />;
-      case 'message': return <MessageSquare className="text-blue-500" size={16} />;
-      case 'proposal': return <Target className="text-purple-500" size={16} />;
-      case 'review': return <Star className="text-yellow-500" size={16} />;
-      default: return <Bell className="text-gray-500" size={16} />;
-    }
-  };
+  if (!isAuthenticated) {
+    return (
+      <div className="pt-32 pb-20">
+        <div className="container px-4 mx-auto">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4">Please sign in to access your dashboard</h1>
+            <Button asChild>
+              <Link to="/login">Sign In</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="pt-20 pb-8">
+    <div className="pt-32 pb-20">
       <div className="container px-4 mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold">
-              Welcome back, {userType === 'freelancer' ? 'Priya' : 'Rajesh'}! 👋
-            </h1>
-            <p className="text-muted-foreground">
-              {userType === 'freelancer' 
-                ? 'Here\'s your freelancing dashboard with AI-powered insights'
-                : 'Manage your projects and discover top talent'}
+            <h1 className="text-3xl font-bold">Dashboard</h1>
+            <p className="text-muted-foreground mt-2">
+              Welcome back, {user?.email}! Here's what's happening with your {user?.role === 'client' ? 'projects' : 'work'}.
             </p>
           </div>
-          <div className="flex gap-3">
-            <Button variant="outline">
-              <Calendar className="mr-2" size={16} />
-              Schedule Call
-            </Button>
-            <Button>
-              {userType === 'freelancer' ? '+ Apply to Jobs' : '+ Post Project'}
+          <div className="flex items-center gap-4 mt-4 md:mt-0">
+            <Badge variant="secondary" className="text-sm">
+              {user?.role}
+            </Badge>
+            <Button asChild>
+              <Link to={user?.role === 'client' ? '/post-project' : '/projects'}>
+                <Plus className="w-4 h-4 mr-2" />
+                {user?.role === 'client' ? 'Post Project' : 'Find Work'}
+              </Link>
             </Button>
           </div>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {userType === 'freelancer' ? (
-            <>
-              <Card className="card-elevated">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Active Projects</p>
-                      <h3 className="text-2xl font-bold">{currentUserStats.activeProjects}</h3>
-                    </div>
-                    <Users className="text-blue-500" size={24} />
-                  </div>
-                  <p className="text-xs text-green-600 mt-2">↗ 2 new this week</p>
-                </CardContent>
-              </Card>
-              
-              <Card className="card-elevated">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Total Earnings</p>
-                      <h3 className="text-2xl font-bold">₹{currentUserStats.totalEarnings.toLocaleString()}</h3>
-                    </div>
-                    <DollarSign className="text-green-500" size={24} />
-                  </div>
-                  <p className="text-xs text-green-600 mt-2">↗ +₹45k this month</p>
-                </CardContent>
-              </Card>
-              
-              <Card className="card-elevated">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Rating</p>
-                      <h3 className="text-2xl font-bold">{currentUserStats.rating}/5</h3>
-                    </div>
-                    <Star className="text-yellow-500" size={24} />
-                  </div>
-                  <p className="text-xs text-green-600 mt-2">24 completed projects</p>
-                </CardContent>
-              </Card>
-              
-              <Card className="card-elevated">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Available Jobs</p>
-                      <h3 className="text-2xl font-bold">{currentUserStats.availableJobs}</h3>
-                    </div>
-                    <Target className="text-purple-500" size={24} />
-                  </div>
-                  <p className="text-xs text-blue-600 mt-2">23 match your skills</p>
-                </CardContent>
-              </Card>
-            </>
-          ) : (
-            <>
-              <Card className="card-elevated">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Active Projects</p>
-                      <h3 className="text-2xl font-bold">{currentUserStats.activeProjects}</h3>
-                    </div>
-                    <Users className="text-blue-500" size={24} />
-                  </div>
-                  <p className="text-xs text-green-600 mt-2">2 completed this month</p>
-                </CardContent>
-              </Card>
-              
-              <Card className="card-elevated">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Total Spent</p>
-                      <h3 className="text-2xl font-bold">₹{currentUserStats.totalSpent.toLocaleString()}</h3>
-                    </div>
-                    <DollarSign className="text-green-500" size={24} />
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">Across 12 freelancers</p>
-                </CardContent>
-              </Card>
-              
-              <Card className="card-elevated">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">New Proposals</p>
-                      <h3 className="text-2xl font-bold">{currentUserStats.newProposals}</h3>
-                    </div>
-                    <Bell className="text-orange-500" size={24} />
-                  </div>
-                  <p className="text-xs text-blue-600 mt-2">5 need review</p>
-                </CardContent>
-              </Card>
-              
-              <Card className="card-elevated">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Saved Profiles</p>
-                      <h3 className="text-2xl font-bold">{currentUserStats.savedProfiles}</h3>
-                    </div>
-                    <Award className="text-purple-500" size={24} />
-                  </div>
-                  <p className="text-xs text-green-600 mt-2">3 available now</p>
-                </CardContent>
-              </Card>
-            </>
-          )}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total {user?.role === 'client' ? 'Projects' : 'Earnings'}</CardTitle>
+              {user?.role === 'client' ? (
+                <Briefcase className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              )}
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {user?.role === 'client' ? stats.totalProjects : `₹${stats.totalEarnings.toLocaleString()}`}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {user?.role === 'client' ? 'Active projects' : 'Lifetime earnings'}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Active {user?.role === 'client' ? 'Projects' : 'Work'}</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.activeProjects}</div>
+              <p className="text-xs text-muted-foreground">
+                Currently in progress
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                {user?.role === 'client' ? 'Completed' : 'Rating'}
+              </CardTitle>
+              {user?.role === 'client' ? (
+                <CheckCircle className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <Star className="h-4 w-4 text-muted-foreground" />
+              )}
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {user?.role === 'client' ? stats.completedProjects : stats.averageRating}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {user?.role === 'client' ? 'Projects completed' : 'Average rating'}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                {user?.role === 'client' ? 'Pending Payments' : 'Response Time'}
+              </CardTitle>
+              {user?.role === 'client' ? (
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <Clock className="h-4 w-4 text-muted-foreground" />
+              )}
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {user?.role === 'client' ? `₹${stats.pendingPayments.toLocaleString()}` : stats.responseTime}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {user?.role === 'client' ? 'Awaiting release' : 'Average response'}
+              </p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="ai-matches">AI Matches</TabsTrigger>
             <TabsTrigger value="projects">Projects</TabsTrigger>
-            <TabsTrigger value="payments">Payments</TabsTrigger>
-            <TabsTrigger value="messages">Messages</TabsTrigger>
+            <TabsTrigger value="activity">Activity</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Recent Activity */}
-              <Card className="card-elevated">
+              {/* Recent Projects */}
+              <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Clock size={20} />
-                    Recent Activity
+                    <Briefcase className="w-5 h-5" />
+                    Recent {user?.role === 'client' ? 'Projects' : 'Work'}
                   </CardTitle>
+                  <CardDescription>
+                    Your latest {user?.role === 'client' ? 'projects' : 'assignments'}
+                  </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {recentActivity.map((activity) => (
-                      <div key={activity.id} className="flex items-start gap-3 p-3 rounded-lg bg-secondary/50">
-                        {getActivityIcon(activity.type)}
-                        <div className="flex-1">
-                          <p className="font-medium text-sm">{activity.title}</p>
-                          {activity.content && (
-                            <p className="text-xs text-muted-foreground">{activity.content}</p>
-                          )}
-                          {activity.amount && (
-                            <p className="text-sm font-bold text-green-600">
-                              +₹{activity.amount.toLocaleString()}
-                            </p>
-                          )}
-                          <p className="text-xs text-muted-foreground mt-1">{activity.timestamp}</p>
-                        </div>
-                        <Badge variant={activity.status === 'unread' ? 'default' : 'secondary'} className="text-xs">
-                          {activity.status}
-                        </Badge>
+                <CardContent className="space-y-4">
+                  {recentProjects.slice(0, 3).map((project) => (
+                    <div key={project.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex-1">
+                        <h4 className="font-medium text-sm">{project.title}</h4>
+                        <p className="text-xs text-muted-foreground">
+                          {user?.role === 'client' ? project.client : `Budget: ₹${project.budget}`}
+                        </p>
                       </div>
-                    ))}
-                  </div>
+                      <div className="text-right">
+                        <Badge 
+                          variant={project.status === 'completed' ? 'default' : project.status === 'active' ? 'secondary' : 'outline'}
+                          className="text-xs"
+                        >
+                          {project.status}
+                        </Badge>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {project.progress}% complete
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <Button variant="outline" className="w-full" asChild>
+                    <Link to={user?.role === 'client' ? '/project-management' : '/milestone-management'}>
+                      View All {user?.role === 'client' ? 'Projects' : 'Work'}
+                    </Link>
+                  </Button>
                 </CardContent>
               </Card>
 
-              {/* Active Projects Overview */}
-              <Card className="card-elevated">
+              {/* Recent Activity */}
+              <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <TrendingUp size={20} />
-                    Active Projects
+                    <TrendingUp className="w-5 h-5" />
+                    Recent Activity
                   </CardTitle>
+                  <CardDescription>
+                    Latest updates and notifications
+                  </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {activeProjects.map((project) => (
-                      <div key={project.id} className="p-3 rounded-lg border">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-medium text-sm">{project.title}</h4>
-                          <Badge variant={project.status === 'review' ? 'default' : 'secondary'}>
-                            {project.status}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground mb-2">{project.client}</p>
-                        <div className="flex items-center justify-between text-xs">
-                          <span>Progress: {project.progress}%</span>
-                          <span>₹{project.budget.toLocaleString()}</span>
-                        </div>
-                        <div className="w-full bg-secondary rounded-full h-1.5 mt-2">
-                          <div 
-                            className="bg-primary h-1.5 rounded-full" 
-                            style={{ width: `${project.progress}%` }}
-                          />
-                        </div>
+                <CardContent className="space-y-4">
+                  {recentActivities.map((activity) => (
+                    <div key={activity.id} className="flex items-start gap-3 p-3 border rounded-lg">
+                      {activity.icon}
+                      <div className="flex-1">
+                        <p className="text-sm">{activity.message}</p>
+                        <p className="text-xs text-muted-foreground">{activity.time}</p>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
                 </CardContent>
               </Card>
             </div>
           </TabsContent>
 
-          <TabsContent value="ai-matches" className="space-y-6">
-            <AIJobMatcher 
-              userType={userType}
-              userSkills={['UI/UX Design', 'React', 'Figma']}
-              userLocation="Bangalore"
-            />
-          </TabsContent>
-
           <TabsContent value="projects" className="space-y-6">
-            {userType === 'freelancer' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card className="card-elevated">
-                  <CardHeader>
-                    <CardTitle>My Portfolio</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid gap-4">
-                      {portfolioItems.map((item) => (
-                        <PortfolioCard key={item.id} {...item} />
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card className="card-elevated">
-                  <CardHeader>
-                    <CardTitle>Project Timeline</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {activeProjects.map((project) => (
-                        <div key={project.id} className="border-l-2 border-primary pl-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>All {user?.role === 'client' ? 'Projects' : 'Work'}</CardTitle>
+                <CardDescription>
+                  Manage your {user?.role === 'client' ? 'projects' : 'assignments'} and track progress
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {recentProjects.map((project) => (
+                    <div key={project.id} className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
                           <h4 className="font-medium">{project.title}</h4>
-                          <p className="text-sm text-muted-foreground">Due: {project.deadline}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <div className="w-2 h-2 rounded-full bg-green-500" />
-                            <span className="text-xs">Last activity: {project.lastActivity}</span>
-                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {user?.role === 'client' ? project.client : `Budget: ₹${project.budget}`}
+                          </p>
                         </div>
-                      ))}
+                        <Badge 
+                          variant={project.status === 'completed' ? 'default' : project.status === 'active' ? 'secondary' : 'outline'}
+                        >
+                          {project.status}
+                        </Badge>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span>Progress</span>
+                          <span>{project.progress}%</span>
+                        </div>
+                        <Progress value={project.progress} className="h-2" />
+                        <div className="flex justify-between text-sm text-muted-foreground">
+                          <span>Deadline: {project.deadline}</span>
+                          <span>Budget: ₹{project.budget}</span>
+                        </div>
+                      </div>
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
-          <TabsContent value="payments" className="space-y-6">
-            <EscrowPaymentCard
-              projectId="1"
-              projectTitle="E-commerce Mobile App UI/UX"
-              amount={85000}
-              status="in_progress"
-              freelancerName="Priya Sharma"
-              clientName="TechStart Solutions"
-              userRole={userType}
-              milestones={[
-                { id: '1', title: 'Wireframes', amount: 25000, status: 'completed', dueDate: '2025-01-15' },
-                { id: '2', title: 'UI Design', amount: 35000, status: 'completed', dueDate: '2025-01-20' },
-                { id: '3', title: 'Final Delivery', amount: 25000, status: 'pending', dueDate: '2025-01-25' }
-              ]}
-            />
-          </TabsContent>
-
-          <TabsContent value="messages" className="space-y-6">
-            <ProjectMessaging
-              projectId="1"
-              projectTitle="E-commerce Mobile App UI/UX"
-              participants={[
-                {
-                  id: 'client1',
-                  name: 'Rajesh Kumar',
-                  avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e',
-                  role: 'client',
-                  isOnline: true
-                },
-                {
-                  id: 'freelancer1',
-                  name: 'Priya Sharma',
-                  avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330',
-                  role: 'freelancer',
-                  isOnline: false
-                }
-              ]}
-              currentUserId={userType === 'freelancer' ? 'freelancer1' : 'client1'}
-            />
+          <TabsContent value="activity" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Activity Feed</CardTitle>
+                <CardDescription>
+                  Complete history of your activities and interactions
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {recentActivities.map((activity) => (
+                    <div key={activity.id} className="flex items-start gap-3 p-4 border rounded-lg">
+                      {activity.icon}
+                      <div className="flex-1">
+                        <p className="text-sm">{activity.message}</p>
+                        <p className="text-xs text-muted-foreground">{activity.time}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

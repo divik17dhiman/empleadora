@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = 'http://localhost:3001';
 
 class ApiService {
   constructor() {
@@ -34,9 +34,16 @@ class ApiService {
       ...options,
     };
 
+    console.log('Making request to:', url);
+    console.log('Request config:', config);
+
     try {
       const response = await fetch(url, config);
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+      
       const data = await response.json();
+      console.log('Response data:', data);
 
       if (!response.ok) {
         throw new Error(data.message || 'API request failed');

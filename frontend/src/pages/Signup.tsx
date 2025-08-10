@@ -3,57 +3,60 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from '@/hooks/use-toast';
-import { Eye, EyeOff } from 'lucide-react';
-import { apiService } from '@/services/api';
+import { Eye, EyeOff, Wallet } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 const formSchema = z.object({
-  name: z.string().min(2, { message: 'Name must be at least 2 characters' }),
   email: z.string().email({ message: 'Please enter a valid email address' }),
   password: z.string().min(8, { message: 'Password must be at least 8 characters' }),
-  userType: z.enum(['client', 'freelancer'], { 
-    required_error: 'Please select an account type' 
-  }),
+  confirmPassword: z.string(),
+  wallet_address: z.string().min(1, { message: 'Wallet address is required' }),
+  role: z.enum(['client', 'freelancer'], { message: 'Please select a role' }),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 });
 
 type FormData = z.infer<typeof formSchema>;
 
 const Signup = () => {
   const navigate = useNavigate();
+  const { signup } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: '',
       email: '',
       password: '',
-      userType: 'client',
+      confirmPassword: '',
+      wallet_address: '',
+      role: undefined,
     },
   });
 
   const onSubmit = async (data: FormData) => {
     try {
-      console.log(data);
-      const result = await apiService.signup(data);
-      console.log(result);
-      
+      await signup(data);
+
       // Show success toast
       toast({
-        title: 'Account created',
-        description: 'Welcome to Empleadora!',
+        title: 'Account created successfully',
+        description: 'Welcome to Empleadora! Please sign in.',
       });
 
-      // Redirect to user profile to complete setup
-      localStorage.setItem('user', JSON.stringify(result.user));
-      navigate('/user-profile');
-    } catch (error) {
+      // Redirect to login page
+      navigate('/login');
+    } catch (error: any) {
       // Show error toast
       toast({
         title: 'Error',
@@ -68,28 +71,14 @@ const Signup = () => {
       <div className="container px-4 mx-auto max-w-md">
         <Card className="card-elevated">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center">Create an account</CardTitle>
+            <CardTitle className="text-2xl text-center">Create Account</CardTitle>
             <CardDescription className="text-center">
-              Enter your information below to create your account
+              Join Empleadora and start your freelancing journey
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Full Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="John Doe" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
                 <FormField
                   control={form.control}
                   name="email"
@@ -99,6 +88,48 @@ const Signup = () => {
                       <FormControl>
                         <Input placeholder="email@example.com" {...field} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="wallet_address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Wallet Address</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input 
+                            placeholder="0x..." 
+                            {...field} 
+                          />
+                          <Wallet className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={16} />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>I want to</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select your role" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="client">Hire Freelancers</SelectItem>
+                          <SelectItem value="freelancer">Find Work</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -135,36 +166,34 @@ const Signup = () => {
                 
                 <FormField
                   control={form.control}
-                  name="userType"
+                  name="confirmPassword"
                   render={({ field }) => (
-                    <FormItem className="space-y-3">
-                      <FormLabel>Account Type</FormLabel>
+                    <FormItem>
+                      <FormLabel>Confirm Password</FormLabel>
                       <FormControl>
-                        <RadioGroup
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                          className="flex flex-col space-y-1"
-                        >
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="client" id="client" />
-                            <label htmlFor="client" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                              I want to hire (Client)
-                            </label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="freelancer" id="freelancer" />
-                            <label htmlFor="freelancer" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                              I want to work (Freelancer)
-                            </label>
-                          </div>
-                        </RadioGroup>
+                        <div className="relative">
+                          <Input 
+                            type={showConfirmPassword ? 'text' : 'password'} 
+                            placeholder="••••••••" 
+                            {...field} 
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-0 top-0 h-full px-3 py-2"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          >
+                            {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                          </Button>
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
                 
-                <Button type="submit" className="w-full">Create account</Button>
+                <Button type="submit" className="w-full">Create Account</Button>
               </form>
             </Form>
             
