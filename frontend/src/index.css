@@ -195,4 +195,83 @@
   .animate-scroll-text {
     animation: scroll-text 20s linear infinite;
   }
+  
+  /* Wave Background Animations */
+  @keyframes wave-float {
+    0%, 100% {
+      transform: translateY(0px) rotate(0deg);
+    }
+    25% {
+      transform: translateY(-10px) rotate(1deg);
+    }
+    50% {
+      transform: translateY(-5px) rotate(-1deg);
+    }
+    75% {
+      transform: translateY(-15px) rotate(0.5deg);
+    }
+  }
+  
+  @keyframes wave-pulse {
+    0%, 100% {
+      opacity: 0.7;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.05);
+    }
+  }
+  
+  .animate-wave-float {
+    animation: wave-float 6s ease-in-out infinite;
+  }
+  
+  .animate-wave-pulse {
+    animation: wave-pulse 4s ease-in-out infinite;
+  }
+  
+  /* Additional Hero Animations */
+  @keyframes bounce-x {
+    0%, 100% {
+      transform: translateX(0);
+    }
+    50% {
+      transform: translateX(4px);
+    }
+  }
+  
+  @keyframes scale-102 {
+    0% {
+      transform: scale(1);
+    }
+    100% {
+      transform: scale(1.02);
+    }
+  }
+  
+  @keyframes scale-105 {
+    0% {
+      transform: scale(1);
+    }
+    100% {
+      transform: scale(1.05);
+    }
+  }
+  
+  .animate-bounce-x {
+    animation: bounce-x 1s ease-in-out infinite;
+  }
+  
+  .hover\:scale-102:hover {
+    transform: scale(1.02);
+  }
+  
+  .hover\:scale-105:hover {
+    transform: scale(1.05);
+  }
+  
+  .hover\:scale-110:hover {
+    transform: scale(1.1);
+  }
 }

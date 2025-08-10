@@ -12,6 +12,7 @@
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
+    "@nomicfoundation/hardhat-ethers": "^3.0.0",
     "@nomicfoundation/hardhat-toolbox": "^6.1.0",
     "@openzeppelin/contracts": "^5.4.0",
     "hardhat": "^2.26.2",
@@ -20,11 +21,13 @@
   "dependencies": {
     "@prisma/client": "^6.13.0",
     "axios": "^1.11.0",
+    "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "ethers": "^6.15.0",
     "express": "^5.1.0",
     "ipfs-http-client": "^50.1.2",
+    "jsonwebtoken": "^9.0.2",
     "web3.storage": "^4.5.5"
   }
 }

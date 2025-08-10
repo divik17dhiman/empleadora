@@ -11,7 +11,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from '@/hooks/use-toast';
 import { Eye, EyeOff } from 'lucide-react';
-import { apiService } from '@/services/api';
+import { useAuth } from '@/context/AuthContext';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address' }),
@@ -22,6 +22,7 @@ type FormData = z.infer<typeof formSchema>;
 
 const Login = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   
   const form = useForm<FormData>({
@@ -34,7 +35,7 @@ const Login = () => {
 
   const onSubmit = async (data: FormData) => {
     try {
-      const result = await apiService.signin(data);
+      await login(data.email, data.password);
 
       // Show success toast
       toast({
@@ -43,14 +44,13 @@ const Login = () => {
       });
 
       // Redirect to home page after login
-      localStorage.setItem('user', JSON.stringify(result.user));
-      console.log(result.user);
       navigate('/');
-    } catch (error) {
+    } catch (error: any) {
       // Show error toast
       toast({
         title: 'Error',
         description: error.message || 'Something went wrong',
+        variant: 'destructive',
       });
     }
   };
