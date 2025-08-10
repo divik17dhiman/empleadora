@@ -4,162 +4,306 @@ const prisma = require("../config/db");
 const { adminWallet, contract } = require("../config/web3");
 const router = express.Router();
 
-// Debug endpoint to check contract status
+// GET system status and statistics
 router.get("/status", async (req, res) => {
   try {
-    const network = await contract.runner.provider.getNetwork();
-    const code = await contract.runner.provider.getCode(contract.target);
-    const adminBalance = await contract.runner.provider.getBalance(adminWallet.address);
-    
+    const [
+      totalUsers,
+      totalProjects,
+      totalMilestones,
+      disputedProjects,
+      fundedMilestones,
+      releasedMilestones
+    ] = await Promise.all([
+      prisma.user.count(),
+      prisma.project.count(),
+      prisma.milestone.count(),
+      prisma.project.count({ where: { disputed: true } }),
+      prisma.milestone.count({ where: { funded: true } }),
+      prisma.milestone.count({ where: { released: true } })
+    ]);
+
+    // Get all milestones to calculate amounts manually since amount_wei is stored as string
+    const allMilestones = await prisma.milestone.findMany({
+      select: { amount_wei: true, funded: true, released: true }
+    });
+
+    const totalAmount = allMilestones.reduce((sum, m) => sum + BigInt(m.amount_wei), BigInt(0));
+    const fundedAmount = allMilestones
+      .filter(m => m.funded)
+      .reduce((sum, m) => sum + BigInt(m.amount_wei), BigInt(0));
+    const releasedAmount = allMilestones
+      .filter(m => m.released)
+      .reduce((sum, m) => sum + BigInt(m.amount_wei), BigInt(0));
+
     res.json({
-      contract_address: contract.target,
-      network_name: network.name,
-      network_chain_id: network.chainId.toString(),
-      contract_deployed: code !== "0x",
-      admin_wallet: adminWallet.address,
-      admin_balance_eth: ethers.formatEther(adminBalance),
-      contract_code_size: code.length
+      system: "online",
+      timestamp: new Date().toISOString(),
+      statistics: {
+        users: {
+          total: totalUsers,
+          clients: await prisma.user.count({ where: { role: 'client' } }),
+          freelancers: await prisma.user.count({ where: { role: 'freelancer' } }),
+          admins: await prisma.user.count({ where: { role: 'admin' } })
+        },
+        projects: {
+          total: totalProjects,
+          disputed: disputedProjects,
+          active: totalProjects - disputedProjects
+        },
+        milestones: {
+          total: totalMilestones,
+          funded: fundedMilestones,
+          released: releasedMilestones,
+          pending: totalMilestones - fundedMilestones
+        },
+        funding: {
+          totalAmount: totalAmount.toString(),
+          fundedAmount: fundedAmount.toString(),
+          releasedAmount: releasedAmount.toString()
+        }
+      }
     });
   } catch (err) {
-    console.error("Status check error:", err);
-    res.status(500).json({ error: "Status check failed", details: err.message });
+    console.error("Get status error:", err);
+    res.status(500).json({ error: "Could not fetch system status" });
   }
 });
 
-// Raise dispute first (required before refund)
+// GET all disputed projects
+router.get("/disputes", async (req, res) => {
+  try {
+    const disputes = await prisma.project.findMany({
+      where: { disputed: true },
+      include: {
+        client: {
+          select: {
+            id: true,
+            email: true,
+            wallet_address: true,
+            role: true
+          }
+        },
+        freelancer: {
+          select: {
+            id: true,
+            email: true,
+            wallet_address: true,
+            role: true
+          }
+        },
+        milestones: true
+      }
+    });
+
+    // Convert BigInts to strings for safe JSON
+    const safeDisputes = JSON.parse(JSON.stringify(disputes, (_, value) =>
+      typeof value === "bigint" ? value.toString() : value
+    ));
+
+    res.json(safeDisputes);
+  } catch (err) {
+    console.error("Get disputes error:", err);
+    res.status(500).json({ error: "Could not fetch disputes" });
+  }
+});
+
+// GET dispute by project ID
+router.get("/disputes/:projectId", async (req, res) => {
+  try {
+    const projectId = parseInt(req.params.projectId);
+    
+    const dispute = await prisma.project.findFirst({
+      where: {
+        id: projectId,
+        disputed: true
+      },
+      include: {
+        client: {
+          select: {
+            id: true,
+            email: true,
+            wallet_address: true,
+            role: true
+          }
+        },
+        freelancer: {
+          select: {
+            id: true,
+            email: true,
+            wallet_address: true,
+            role: true
+          }
+        },
+        milestones: true
+      }
+    });
+
+    if (!dispute) {
+      return res.status(404).json({ error: "Dispute not found" });
+    }
+
+    // Convert BigInts to strings for safe JSON
+    const safeDispute = JSON.parse(JSON.stringify(dispute, (_, value) =>
+      typeof value === "bigint" ? value.toString() : value
+    ));
+
+    res.json(safeDispute);
+  } catch (err) {
+    console.error("Get dispute error:", err);
+    res.status(500).json({ error: "Could not fetch dispute" });
+  }
+});
+
+// GET all events/logs
+router.get("/events", async (req, res) => {
+  try {
+    const events = await prisma.event.findMany({
+      orderBy: { created_at: 'desc' },
+      take: 100 // Limit to last 100 events
+    });
+
+    res.json(events);
+  } catch (err) {
+    console.error("Get events error:", err);
+    res.status(500).json({ error: "Could not fetch events" });
+  }
+});
+
+// GET events by type
+router.get("/events/:type", async (req, res) => {
+  try {
+    const { type } = req.params;
+    
+    const events = await prisma.event.findMany({
+      where: { type },
+      orderBy: { created_at: 'desc' },
+      take: 50
+    });
+
+    res.json(events);
+  } catch (err) {
+    console.error("Get events by type error:", err);
+    res.status(500).json({ error: "Could not fetch events" });
+  }
+});
+
 router.post("/dispute", async (req, res) => {
   try {
-    const { pid } = req.body;
-    
-    // Validate input
-    if (!pid || isNaN(Number(pid))) {
-      return res.status(400).json({ error: "Invalid pid parameter" });
+    const { projectId } = req.body;
+
+    if (!projectId) {
+      return res.status(400).json({ error: "projectId is required" });
     }
-    
-    // Check if contract is deployed and accessible
-    try {
-      const code = await contract.runner.provider.getCode(contract.target);
-      if (code === "0x") {
-        return res.status(500).json({ 
-          error: "Contract not deployed", 
-          details: "No contract found at the specified address. Check CONTRACT_ADDRESS in .env" 
-        });
+
+    const project = await prisma.project.update({
+      where: { id: parseInt(projectId) },
+      data: { disputed: true },
+      include: {
+        client: {
+          select: {
+            id: true,
+            email: true,
+            wallet_address: true,
+            role: true
+          }
+        },
+        freelancer: {
+          select: {
+            id: true,
+            email: true,
+            wallet_address: true,
+            role: true
+          }
+        },
+        milestones: true
       }
-    } catch (contractError) {
-      return res.status(500).json({ 
-        error: "Contract connection failed", 
-        details: contractError.message 
-      });
-    }
-    
-    // Check if project exists
-    let project;
-    try {
-      project = await contract.projects(pid);
-    } catch (projectError) {
-      return res.status(400).json({ 
-        error: "Failed to fetch project", 
-        details: projectError.message 
-      });
-    }
-    
-    if (!project || project.client === "0x0000000000000000000000000000000000000000") {
-      return res.status(400).json({ error: "Project not found" });
-    }
-    
-    // Raise dispute on blockchain
-    const tx = await contract.connect(adminWallet).raiseDispute(pid);
-    await tx.wait();
+    });
 
-    // Update database
-    try {
-      await prisma.project.updateMany({
-        where: { onchain_pid: BigInt(pid) },
-        data: { disputed: true }
-      });
-    } catch (dbError) {
-      console.error("Database update error:", dbError);
-      // Don't fail the request if DB update fails, but log it
-    }
+    // Log the dispute event
+    await prisma.event.create({
+      data: {
+        tx_hash: `dispute_${Date.now()}`,
+        type: "dispute_raised",
+        payload: {
+          projectId: project.id,
+          onchain_pid: project.onchain_pid.toString(),
+          timestamp: new Date().toISOString()
+        }
+      }
+    });
 
-    res.json({ status: "dispute raised", tx: tx.hash });
+    // Convert BigInts to strings for safe JSON
+    const safeProject = JSON.parse(JSON.stringify(project, (_, value) =>
+      typeof value === "bigint" ? value.toString() : value
+    ));
+
+    res.json(safeProject);
   } catch (err) {
-    console.error("Dispute error:", err);
-    res.status(500).json({ error: "Dispute failed", details: err.message });
+    console.error("Raise dispute error:", err);
+    res.status(500).json({ error: "Could not raise dispute" });
   }
 });
 
 router.post("/refund", async (req, res) => {
   try {
-    const { pid, mid } = req.body;
-    
-    // Validate input
-    if (pid === undefined || mid === undefined || isNaN(Number(pid)) || isNaN(Number(mid))) {
-      return res.status(400).json({ error: "Missing or invalid pid or mid parameter" });
+    const { projectId, milestoneId } = req.body;
+
+    if (!projectId || !milestoneId) {
+      return res.status(400).json({ error: "projectId and milestoneId are required" });
     }
-    
-    // Check if contract is deployed and accessible
-    try {
-      const code = await contract.runner.provider.getCode(contract.target);
-      if (code === "0x") {
-        return res.status(500).json({ 
-          error: "Contract not deployed", 
-          details: "No contract found at the specified address. Check CONTRACT_ADDRESS in .env" 
-        });
+
+    const milestone = await prisma.milestone.update({
+      where: {
+        id: parseInt(milestoneId),
+        projectId: parseInt(projectId)
+      },
+      data: { 
+        funded: false,
+        released: false
+      },
+      include: {
+        project: {
+          include: {
+            client: {
+              select: {
+                id: true,
+                email: true,
+                wallet_address: true,
+                role: true
+              }
+            },
+            freelancer: {
+              select: {
+                id: true,
+                email: true,
+                wallet_address: true,
+                role: true
+              }
+            }
+          }
+        }
       }
-    } catch (contractError) {
-      return res.status(500).json({ 
-        error: "Contract connection failed", 
-        details: contractError.message 
-      });
-    }
-    
-    // Check if project exists and is disputed
-    let project;
-    try {
-      project = await contract.projects(pid);
-    } catch (projectError) {
-      return res.status(400).json({ 
-        error: "Failed to fetch project", 
-        details: projectError.message 
-      });
-    }
-    
-    if (!project || project.client === "0x0000000000000000000000000000000000000000") {
-      return res.status(400).json({ error: "Project not found" });
-    }
-    
-    if (!project.disputed) {
-      return res.status(400).json({ error: "Project must be disputed before refund. Call /admin/dispute first" });
-    }
-    
-    // Check milestone exists and is refundable
-    if (!project.milestones || mid >= project.milestones.length) {
-      return res.status(400).json({ error: "Milestone not found" });
-    }
-      
-    // Execute refund on blockchain
-    const tx = await contract.connect(adminWallet).refundMilestone(pid, mid);
-    await tx.wait();
+    });
 
-    // Update database
-    try {
-      await prisma.milestone.updateMany({
-        where: { 
-          project: { onchain_pid: BigInt(pid) },
-          mid: parseInt(mid)
-        },
-        data: { released: true }
-      });
-    } catch (dbError) {
-      console.error("Database update error:", dbError);
-      // Don't fail the request if DB update fails, but log it
-    }
+    // Log the refund event
+    await prisma.event.create({
+      data: {
+        tx_hash: `refund_${Date.now()}`,
+        type: "refund_processed",
+        payload: {
+          projectId: milestone.projectId,
+          milestoneId: milestone.id,
+          amount_wei: milestone.amount_wei,
+          timestamp: new Date().toISOString()
+        }
+      }
+    });
 
-    res.json({ status: "refunded", tx: tx.hash });
+    res.json(milestone);
   } catch (err) {
-    console.error("Refund error:", err);
-    res.status(500).json({ error: "Refund failed", details: err.message });
+    console.error("Process refund error:", err);
+    res.status(500).json({ error: "Could not process refund" });
   }
 });
 

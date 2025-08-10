@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Star, MapPin, Bookmark, MessageSquare } from 'lucide-react';
+import { Star, MapPin, Bookmark, MessageSquare, Clock, ExternalLink, Mail, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
@@ -19,6 +19,15 @@ interface ProfileCardProps {
   hourlyRate: number;
   tags: string[];
   featured?: boolean;
+  description?: string;
+  portfolio?: string;
+  email?: string;
+  phone?: string;
+  experience?: string;
+  languages?: string[];
+  availability?: string;
+  completedProjects?: number;
+  responseTime?: string;
 }
 
 export function ProfileCard({ 
@@ -31,7 +40,16 @@ export function ProfileCard({
   location, 
   hourlyRate, 
   tags, 
-  featured = false 
+  featured = false,
+  description,
+  portfolio,
+  email,
+  phone,
+  experience,
+  languages,
+  availability,
+  completedProjects,
+  responseTime
 }: ProfileCardProps) {
   const navigate = useNavigate();
   const { saveProfile, removeProfile, isSaved } = useSavedProfiles();
@@ -63,8 +81,7 @@ export function ProfileCard({
   };
   
   const handleContact = () => {
-    navigate(`/profile/${id}`);
-    // Scroll to contact form or open message modal in a real implementation
+    navigate(`/contact/${id}`);
     toast({
       title: 'Contact initiated',
       description: `You can now message ${name}.`
@@ -77,6 +94,24 @@ export function ProfileCard({
       title: 'Hire process started',
       description: `Continue to hire ${name}.`
     });
+  };
+
+  const handlePortfolio = () => {
+    if (portfolio) {
+      window.open(portfolio, '_blank');
+    }
+  };
+
+  const handleEmail = () => {
+    if (email) {
+      window.open(`mailto:${email}`, '_blank');
+    }
+  };
+
+  const handlePhone = () => {
+    if (phone) {
+      window.open(`tel:${phone}`, '_blank');
+    }
   };
   
   return (
@@ -124,7 +159,7 @@ export function ProfileCard({
               </Button>
             </div>
             
-            <div className="flex items-center text-sm text-muted-foreground mb-4">
+            <div className="flex items-center text-sm text-muted-foreground mb-3">
               <div className="flex items-center mr-3">
                 <Star size={16} className="text-amber-500 mr-1" />
                 <span className="font-medium text-foreground">{rating.toFixed(1)}</span>
@@ -135,11 +170,38 @@ export function ProfileCard({
                 {location}
               </div>
             </div>
+
+            {/* Additional Info Row */}
+            <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3">
+              {experience && (
+                <div className="flex items-center">
+                  <Clock size={12} className="mr-1" />
+                  {experience}
+                </div>
+              )}
+              {completedProjects && (
+                <div>
+                  {completedProjects} projects completed
+                </div>
+              )}
+              {responseTime && (
+                <div>
+                  Responds in {responseTime}
+                </div>
+              )}
+            </div>
+
+            {/* Description */}
+            {description && (
+              <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                {description}
+              </p>
+            )}
             
             <div className="flex items-center justify-between mb-4">
               <div>
                 <span className="text-xs text-muted-foreground">Hourly Rate</span>
-                <p className="font-semibold">${hourlyRate.toFixed(2)}/hr</p>
+                <p className="font-semibold">₹{hourlyRate.toLocaleString()}/hr</p>
               </div>
               
               <div className="flex gap-2">
@@ -161,6 +223,51 @@ export function ProfileCard({
                 </Button>
               </div>
             </div>
+
+            {/* Contact Actions */}
+            <div className="flex gap-2 mb-4">
+              {portfolio && (
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  className="h-8 px-3 text-xs"
+                  onClick={handlePortfolio}
+                >
+                  <ExternalLink size={14} className="mr-1" />
+                  Portfolio
+                </Button>
+              )}
+              {email && (
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  className="h-8 px-3 text-xs"
+                  onClick={handleEmail}
+                >
+                  <Mail size={14} className="mr-1" />
+                  Email
+                </Button>
+              )}
+              {phone && (
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  className="h-8 px-3 text-xs"
+                  onClick={handlePhone}
+                >
+                  <Phone size={14} className="mr-1" />
+                  Call
+                </Button>
+              )}
+            </div>
+
+            {/* Languages */}
+            {languages && languages.length > 0 && (
+              <div className="mb-3">
+                <span className="text-xs text-muted-foreground">Languages: </span>
+                <span className="text-xs">{languages.join(', ')}</span>
+              </div>
+            )}
             
             <div className="flex flex-wrap gap-2">
               {tags.map((tag, index) => (
